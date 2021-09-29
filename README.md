@@ -30,14 +30,54 @@ $ bash download_dataset.sh Furbo \
 
 ## Append Data
 
+Here we start to prepare new data to retrain model. We should prepare a folder with .wav audio files and an annotation csv file. The annotation csv file format is path,label,remark (ex: 1631919610_1631919612.wav,2,Crying or 1631995774_1631995775.wav,1,Howling,music). The append_data.sh will copy new audio files to train/val folder in dvc, and combine new annotation csv file and train/val csv annotation file in dvc. 
+
 ```bash
-$ append_data.sh
+$ bash append_data.sh [Target_Folder_In_DVC] \
+                      [New_Audio_Folder] \
+                      [Annotation_CSV_In_DVC] \
+                      [New_Annotation_CSV] \
+                      [Combine_Annotation_CSV_Name]
+```
+
+For example, we want to append data from `/KIKI/henry/add_mini_advancedbarking_data/train/` to `/KIKI/hucheng/mini_advancedbarking_data/train/` and combine annotation csv file `/KIKI/henry/add_mini_advancedbarking_data/meta/add.csv` and `/KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_01_train.csv`, then named it as `/KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_02_train.csv`, we can execute the following command:
+
+```bash
+$ bash append_data.sh /KIKI/hucheng/mini_advancedbarking_data/train/ \
+                      /KIKI/henry/add_mini_advancedbarking_data/train/ \
+                      /KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_01_train.csv \
+                      /KIKI/henry/add_mini_advancedbarking_data/meta/add.csv \
+                      /KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_02_train.csv
 ```
 
 ## Retrain
 
+After preparing annotation file and audio files, we would like to train model now. 
+
 ```bash
-$ retrain.sh
+$ bash retrain.sh [Train_Task:AdvancedBarking,GlassBreaking,HomeEmergency,HomeEmergency_JP,Integrate] \
+                  [DVC_root] \
+                  [Meta_path] \
+                  [CSV_file_prefix] \
+                  [Path_to_save_train_log_and_model_wight] \
+                  [Exp_name_prefix] \
+                  [Training_epoch_number] \ 
+                  [Path_of_pretrained_weights] \
+                  [CUDA_DEVICE_ID]
+```
+
+For example, we want to retrain `AdvancedBarking` (Train_Task) task use data in `/KIKI/hucheng/mini_advancedbarking_data/` (DVC_root) and annotation file called `AdvancedBarking_MC_20210805_01`_train.csv (CSV_file_prefix) in `/KIKI/hucheng/mini_advancedbarking_data/meta/` (Meta_path). Then this retrain experiment named it as `mini_advancedbarking_20210805` (Exp_name_prefix). During training, we use pretraind model `/home/henry/pretrain_weight/Cnn14_8k_mAP=0.416.pth` (Path_of_pretrained_weights) and train `200` (Training_epoch_number) epoch with `gup1` (CUDA_DEVICE_ID).
+
+```bash
+$ bash retrain.sh AdvancedBarking \
+                  /KIKI/hucheng/mini_advancedbarking_data/ \
+                  /KIKI/hucheng/mini_advancedbarking_data/meta/ \
+                  AdvancedBarking_MC_20210805_01 \
+                  /KIKI/hucheng/mini_advancedbarking_exp/ \
+                  mini_advancedbarking_20210805 \
+                  200 \
+                  /home/henry/pretrain_weight/Cnn14_8k_mAP=0.416.pth \
+                  1
 ```
 
 ## Evaluate
