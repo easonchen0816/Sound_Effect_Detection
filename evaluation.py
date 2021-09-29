@@ -94,7 +94,7 @@ def change_label_num(y_pred, lb_list):
     return individual_pred
 
 def save_report(report, lb_list, name, model_name):
-    model_name = os.path.basename(model_name).split('.')[0]
+    model_name = os.path.basename(model_name)[:-4]
     with open(os.path.join(args.result_dir,'{}_{}_{}_classification_report.json'.format(model_name, lb_list, name)), 'w') as files:
         json.dump(report, files, indent=4)
 
@@ -178,7 +178,7 @@ def main(args):
         y_pred, prob = inference(regression_dataloader, device, model)
         
         trigger = Counter(y_pred)
-        model_name = os.path.basename(model_name).split('.')[0]
+        model_name = os.path.basename(model_name)[:-4]
         for key, value in LABEL_NUM[args.feature].items():
             trigger[value] = trigger.pop(key)
         with open(os.path.join(args.result_dir, '{}_trigger_rate.json'.format(model_name)), 'w') as files:

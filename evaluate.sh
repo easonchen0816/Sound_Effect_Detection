@@ -10,7 +10,7 @@
 #                         4 \
 #                         0
 
-CUDA_VISIBLE_DEVICES=$5 python evalution.py --device $1 \
+CUDA_VISIBLE_DEVICES=$5 python evaluation.py --device $1 \
                                             --feature $2 \
                                             --model_path $3 \
                                             --num_class $4
