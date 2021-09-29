@@ -2,6 +2,14 @@
 
 This repo contains the retraining process of Furbo Dog Nanny sound classication, such as Advanced Barking, HomeEmergency, GlassBreaking, etc.
 
+## Environments
+
+The codebase is developed with Python 3.7.3. Install requirements as follows:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Retrain Process
 
 1. [Download Dataset](#download-dataset)
