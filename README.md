@@ -38,6 +38,13 @@ $ bash download_dataset.sh Furbo \
 
 ## Append Data
 
+Before running append_data.sh, we should prepare a folder with .wav audio files and an annotation csv file. The annotation csv file format is following:
+
+| path                      | label | remark  |
+|---------------------------|-------|---------|
+| 1597048883767177_0.wav    | 0     | Barking |
+| 1597050423359233_0.wav    | 1     | Howling |
+
 Here we start to prepare new data to retrain model. We should prepare a folder with .wav audio files and an annotation csv file. The annotation csv file format is path,label,remark (ex: 1631919610_1631919612.wav,2,Crying or 1631995774_1631995775.wav,1,Howling,music). The append_data.sh will copy new audio files to train/val folder in dvc, and combine new annotation csv file and train/val csv annotation file in dvc. 
 
 ```bash
