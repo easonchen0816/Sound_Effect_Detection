@@ -27,7 +27,7 @@ POSSIBLE_TP = {'AdvancedBarking':['Barking','Howling','Crying','dog_growling'],
 LABEL_TABLE = {'AdvancedBarking':{'Barking':['Barking'],'Howling':['Howling'],'Crying':['Crying']},
                 'HomeEmergency':{'HomeEmergency':['CO_Smoke_Alert','JP_Alert','HomeEmergency']},
                 'GlassBreaking':{'GlassBreaking':['GlassBreaking','Glass_Breaking','glass_drop']},
-                'JP_HomeEmergency':{'JP_HomeEmergency':['CO_Smoke_Alert','JP_Alert','HomeEmergency']}}
+                'JP_HomeEmergency':{'JP_HomeEmergency':['CO_Smoke_Alert','JP_Alert','HomeEmergency','JP_HomeEmergency']}}
 
 LABEL_LIST = {'AdvancedBarking':['Barking','Howling','Crying'],
                 'HomeEmergency':['HomeEmergency'],
