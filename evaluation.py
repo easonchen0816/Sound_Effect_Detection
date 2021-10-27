@@ -7,9 +7,10 @@ import pandas as pd
 import logging
 import tables
 from collections import Counter, defaultdict
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, precision_score, recall_score
 import ast
 import json
+import operator
 
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -22,22 +23,26 @@ logger = logging.getLogger(__file__)
 POSSIBLE_TP = {'AdvancedBarking':['Barking','Howling','Crying','dog_growling'],
                'HomeEmergency':['HomeEmergency','JP_HomeEmergency','CO_Smoke_Alert','JP_Alert','pi_pi_sound'],
                'GlassBreaking':['GlassBreaking','Glass_Breaking','glass_drop','metal_collision','glass_collision','dishes_collision'],
-               'JP_HomeEmergency':['JP_HomeEmergency','HomeEmergency','CO_Smoke_Alert','JP_Alert','pi_pi_sound']}
+               'JP_HomeEmergency':['JP_HomeEmergency','HomeEmergency','CO_Smoke_Alert','JP_Alert','pi_pi_sound'],
+               'FCN':['Cat_Meow','Cat_Fighting','Cat_Crying','cat']}
 
 LABEL_TABLE = {'AdvancedBarking':{'Barking':['Barking'],'Howling':['Howling'],'Crying':['Crying']},
                 'HomeEmergency':{'HomeEmergency':['CO_Smoke_Alert','JP_Alert','HomeEmergency']},
                 'GlassBreaking':{'GlassBreaking':['GlassBreaking','Glass_Breaking','glass_drop']},
-                'JP_HomeEmergency':{'JP_HomeEmergency':['CO_Smoke_Alert','JP_Alert','HomeEmergency','JP_HomeEmergency']}}
+                'JP_HomeEmergency':{'JP_HomeEmergency':['CO_Smoke_Alert','JP_Alert','HomeEmergency','JP_HomeEmergency']},
+                'FCN':{'Cat_Meow':['Cat_Meow'],'Cat_Fighting':['Cat_Fighting'],'Cat_Crying':['Cat_Crying']}}
 
 LABEL_LIST = {'AdvancedBarking':['Barking','Howling','Crying'],
                 'HomeEmergency':['HomeEmergency'],
                 'GlassBreaking':['GlassBreaking'],
-                'JP_HomeEmergency':['JP_HomeEmergency']}
+                'JP_HomeEmergency':['JP_HomeEmergency'],
+                'FCN':['Cat_Meow','Cat_Fighting','Cat_Crying']}
 
 LABEL_NUM = {'AdvancedBarking':{0:'Barking',1:'Howling',2:'Crying',3:'Other'},
                 'HomeEmergency':{0:'HomeEmergency',1:'Other'},
                 'GlassBreaking':{0:'GlassBreaking',1:'Other'},
-                'JP_HomeEmergency':{0:'JP_HomeEmergency',1:'Other'}}
+                'JP_HomeEmergency':{0:'JP_HomeEmergency',1:'Other'},
+                'FCN':{0:'Cat_Meow',1:'Cat_Fighting',2:'Cat_Crying',3:'Other'}}
 
 class SoundDataset_h5(Dataset):
     def __init__(self, h5_root, filename='furbo_testing_set.h5'):
@@ -51,18 +56,21 @@ class SoundDataset_h5(Dataset):
 
 class LabelConverter:
     def __init__(self, feature, csvfile):
+        self.multi_label_idx = []
         self.feature = feature
         self.label_table = LABEL_TABLE[self.feature]
         self.possible_tp_table = POSSIBLE_TP[self.feature]
         self.label_list = LABEL_LIST[self.feature]
-        self.gt, self.possible_gt = self.read_csv(csvfile)
-    
+        self.gt, self.possible_gt, self.remark = self.read_csv(csvfile)
+        
     def read_csv(self, csvfile):
         df = pd.read_csv(csvfile)
         gt, possible_gt = defaultdict(list), defaultdict(list)
         for lb_list in self.label_list:
+            remark = []
             for i in range(len(df)):
                 labels = ast.literal_eval(df.iloc[i].remark)
+                remark.append(labels)
                 if any(label in self.label_table[lb_list] for label in labels):
                     gt[lb_list].append(0)
                 else:
@@ -71,22 +79,28 @@ class LabelConverter:
                     possible_gt[lb_list].append(0)
                 else:
                     possible_gt[lb_list].append(1)
-        return gt, possible_gt
+        # add multi-label index
+        for i in range(len(df)):
+            labels = ast.literal_eval(df.iloc[i].remark)
+            if len(labels) > 1:
+                self.multi_label_idx.append(i)
+        return gt, possible_gt, remark
 
-def change_label_num(y_pred, lb_list):
+def change_label_num(y_pred, lb_list, feature):
     individual_pred = []
+    lb= LABEL_LIST[feature]
     for label in y_pred:
-        if lb_list == 'Barking':
+        if lb_list == lb[0]:
             if label != 0:
                 individual_pred.append(1)
             else:
                 individual_pred.append(0)
-        elif lb_list == 'Howling':
+        elif lb_list == lb[1]:
             if label != 1:
                 individual_pred.append(1)
             else:
                 individual_pred.append(0)
-        elif lb_list == 'Crying':
+        elif lb_list == lb[2]:
             if label != 2:
                 individual_pred.append(1)
             else:
@@ -98,11 +112,35 @@ def save_report(report, lb_list, name, model_name):
     with open(os.path.join(args.result_dir,'{}_{}_{}_classification_report.json'.format(model_name, lb_list, name)), 'w') as files:
         json.dump(report, files, indent=4)
 
-def show_pr(gt, pred, lb_list, model_name, name='model_performance'):
+def show_pr(gt, pred, remark, lb_list, model_name, lb_converter, name='model_performance'):
     print('='*30 + lb_list + " " + name +'='*30)
+    ## confusion matrix
     print(confusion_matrix(gt[lb_list], pred))
+    ## classification report
     print(classification_report(gt[lb_list], pred, digits=4, target_names=[lb_list,'Other']))
+    ## precision
+    print('{} precision:{}'.format(lb_list, precision_score(gt[lb_list], pred, pos_label=0)))
+    precision = precision_score(gt[lb_list], pred, pos_label=0)
+    ## recall
+    recall_pred, recall_gt = [], []
+    for idx, (g, p) in enumerate(zip(gt[lb_list], pred)):
+        if idx not in lb_converter.multi_label_idx:
+            recall_pred.append(p)
+            recall_gt.append(g)
+    print('{} recall (single label only):{}'.format(lb_list, recall_score(recall_gt, recall_pred, pos_label=0)))
+    recall = recall_score(recall_gt, recall_pred, pos_label=0)
+    ## false alarm
+    fp_idx = [idx for idx, (g, p) in enumerate(zip(gt[lb_list], pred)) if (g == 1 and p == 0)]
+    fp_labels = [','.join(remark[idx]) for idx in fp_idx]
+    fp_dict = Counter(fp_labels)
+    fp_dict = dict(sorted(fp_dict.items(), key=operator.itemgetter(1),reverse=True))
+    print("[false alarm]")
+    print(fp_dict)
+    ## save report
     report = classification_report(gt[lb_list], pred, digits=4, target_names=[lb_list,'Other'], output_dict=True)
+    report['precision'] = precision
+    report['recall'] = recall
+    report['fp_labels'] = fp_dict
     save_report(report, lb_list, name, model_name)
 
 def inference(dataloader, device, model):
@@ -150,6 +188,7 @@ def main(args):
     lb_converter = LabelConverter(args.feature, os.path.join(args.csv_root, '{}_testing_set.csv'.format(args.device.lower())))
     gt = lb_converter.gt
     possible_gt = lb_converter.possible_gt
+    remark = lb_converter.remark
 
     for lb_list in LABEL_LIST[args.feature]:
         print("the number of {} gt labels : {}".format(lb_list, len(gt[lb_list])))
@@ -168,11 +207,10 @@ def main(args):
         
         for lb_list in LABEL_LIST[args.feature]:
             individual_pred = y_pred.copy()
-            if args.feature == 'AdvancedBarking':
-                individual_pred = change_label_num(y_pred, lb_list)
-            
-            show_pr(gt, individual_pred, lb_list, model_name)
-            show_pr(possible_gt, individual_pred, lb_list, model_name, name='model_performance_including_possible_TP')
+            if args.feature in ['AdvancedBarking','FCN']:
+                individual_pred = change_label_num(y_pred, lb_list, args.feature)
+            show_pr(gt, individual_pred, remark, lb_list, model_name, lb_converter)
+            show_pr(possible_gt, individual_pred, remark, lb_list, model_name, lb_converter, name='model_performance_including_possible_TP')
         
         # regression set
         y_pred, prob = inference(regression_dataloader, device, model)
