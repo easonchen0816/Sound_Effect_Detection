@@ -9,16 +9,15 @@ from torchsampler import ImbalancedDatasetSampler
 
 from dataset import SoundDataset
 from train import train_model, callback_get_label, prepare_model
-from config import ParameterSetting_AdvancedBarking, ParameterSetting_GlassBreaking, ParameterSetting_HomeEmergency, ParameterSetting_HomeEmergency_JP, ParameterSetting_Integration
+from config import ParameterSetting_AdvancedBarking, ParameterSetting_GlassBreaking, ParameterSetting_HomeEmergency, ParameterSetting_HomeEmergency_JP, ParameterSetting_FCN, ParameterSetting_Integration
 
 
 def main():
     parser = ArgumentParser()
     # data or model path setting
     parser.add_argument("--task",        type=str, help="training task. ex: AdvancedBarking, GlassBreaking, HomeEmergency, HomeEmergency_JP, Integrate")
-    parser.add_argument("--dvc_root",    type=str, help="dvc data root. ex: /KIKI/hucheng/mini_advancedbarking_data/")
-    parser.add_argument("--csv_root",    type=str, help="the folder path of train/val csv files. ex: /KIKI/hucheng/mini_advancedbarking_data/meta/")
-    parser.add_argument("--name_prefix", type=str, help="name prefix of csvfile, ending up with train or val. ex: AdvancedBarking_MC_20210805_01")
+    parser.add_argument("--train_label", type=str, help="training label csvfile. ex: AdvancedBarking_MC_20210805_01_train.csv")
+    parser.add_argument("--val_label",   type=str, help="validation label csvfile. ex: AdvancedBarking_MC_20210805_01_val.csv")    
     parser.add_argument("--save_root",   type=str, help="the path to save training log and model wight. ex:/KIKI/hucheng/mini_advancedbarking_exp/")
     parser.add_argument("--exp_name",    type=str, help="Exp name prefix. ex: mini_advancedbarking_20210805")
     parser.add_argument("--epochs",      type=int, help="epoch number. ex: 200")
@@ -32,15 +31,17 @@ def main():
     # config setting #
     ##################
     if args.task == "AdvancedBarking":
-        params = ParameterSetting_AdvancedBarking(args.dvc_root, args.csv_root, args.name_prefix, args.save_root, args.exp_name, args.pretrained, args.epochs)
+        params = ParameterSetting_AdvancedBarking(args.train_label, args.val_label, args.save_root, args.exp_name, args.pretrained, args.epochs)
     elif args.task == "GlassBreaking":
-        params = ParameterSetting_GlassBreaking(args.dvc_root, args.csv_root, args.name_prefix, args.save_root, args.exp_name, args.pretrained, args.epochs)
+        params = ParameterSetting_GlassBreaking(args.train_label, args.val_label, args.save_root, args.exp_name, args.pretrained, args.epochs)
     elif args.task == "HomeEmergency":
-        params = ParameterSetting_HomeEmergency(args.dvc_root, args.csv_root, args.name_prefix, args.save_root, args.exp_name, args.pretrained, args.epochs)
+        params = ParameterSetting_HomeEmergency(args.train_label, args.val_label, args.save_root, args.exp_name, args.pretrained, args.epochs)
     elif args.task == "HomeEmergency_JP":
-        params = ParameterSetting_HomeEmergency_JP(args.dvc_root, args.csv_root, args.name_prefix, args.save_root, args.exp_name, args.pretrained, args.epochs)
+        params = ParameterSetting_HomeEmergency_JP(args.train_label, args.val_label, args.save_root, args.exp_name, args.pretrained, args.epochs)
+    elif args.task == "FCN":
+        params = ParameterSetting_FCN(args.train_label, args.val_label, args.save_root, args.exp_name, args.pretrained, args.epochs)
     elif args.task == "Integrate":
-        params = ParameterSetting_Integration(args.dvc_root, args.csv_root, args.name_prefix, args.save_root, args.exp_name, args.pretrained, args.epochs)
+        params = ParameterSetting_Integration(args.train_label, args.val_label, args.save_root, args.exp_name, args.pretrained, args.epochs)
     else:
         raise(ValueError("Training task must be AdvancedBarking, GlassBreaking, HomeEmergency, HomeEmergency_JP or Integrate."))
 
