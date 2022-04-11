@@ -33,8 +33,7 @@ def get_optim_scheduler(params, model, dataset_sizes):
         optimizer = AdamP(model.parameters(), lr=params.lr)
     # scheduler
     if params.scheduler == "cosine":
-        scheduler = CosineAnnealingLR(optimizer,
-                                      params.epochs*dataset_sizes['train'])
+        scheduler = CosineAnnealingLR(optimizer, params.Tmax)
     elif params.scheduler == 'reduce':
         scheduler = ReduceLROnPlateau(optimizer)
     return optimizer, scheduler
@@ -194,7 +193,7 @@ def train_model(model, params, dataloaders, dataset_sizes):
                 writer.add_scalar('val f1 score', epoch_f1, epoch)
 
                 # save model if f1 and precision are all the best
-                if epoch_f1 > best_f1 or epoch_precision > best_precision or epoch_recall > best_recall:
+                if epoch_f1 > best_f1 or epoch_precision > best_precision or epoch_recall > best_recall or epoch_acc > best_acc or (epoch in [199, 174, 149, 124, 99, 74, 49, 24]):
                     best_f1 = epoch_f1 if epoch_f1 > best_f1 else best_f1
                     best_precision = epoch_precision if epoch_precision > best_precision else best_precision
                     best_acc = epoch_acc if epoch_acc > best_acc else best_acc
