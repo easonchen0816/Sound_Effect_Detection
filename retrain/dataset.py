@@ -11,7 +11,7 @@ from torch.utils.data import Dataset
 
 try:
     def wav_read(params, wav_file, type_data):
-        wav_file = os.path.join(params.dvc_root, type_data ,wav_file)
+        wav_file = os.path.join(type_data ,wav_file)
         wav_data, sr = sf.read(wav_file, dtype='int16')
         return wav_data, sr
 
@@ -38,8 +38,8 @@ class SoundDataset(Dataset):
             train (bool): train or val dataset
         """
         self.params = params
-        self.data_type = "train" if train else "val"
-        self.csvfile = os.path.join(params.csv_root, "{}_{}.csv".format(self.params.name_prefix, self.data_type))
+        self.data_type = params.train_label if train else params.val_label
+        self.csvfile = os.path.join(self.data_type)
         self.preload = self.params.preload
 
         self.X, self.Y, self.filenames = self.read_data(self.csvfile)
@@ -113,6 +113,15 @@ class SoundDataset(Dataset):
         spec = librosa.feature.melspectrogram(y=samples, sr=self.params.sr, n_fft=self.params.nfft, hop_length=self.params.hop, n_mels=self.params.mel)
         spec_db = librosa.power_to_db(spec).T
         spec_db = np.concatenate((spec_db, np.zeros((inpt_x - spec_db.shape[0], self.params.mel))), axis=0) if spec_db.shape[0] < inpt_x else spec_db[:inpt_x]
+
+        # frequency normalization
+        if self.params.freq_norm:
+            if self.params.freq_norm_global:
+                spec_db = (spec_db - spec_db.mean()) / (spec_db.std() + 1e-9)
+            if self.params.freq_norm_channel:
+                spec_db = (spec_db - spec_db.mean(axis=0)) / (spec_db.std(axis=0) + 1e-9)
+        
+        # reshape for nn
         inpt = np.reshape(spec_db, (1, spec_db.shape[0], spec_db.shape[1]))
 
         return inpt.astype('float32')
