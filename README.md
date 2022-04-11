@@ -70,28 +70,27 @@ $ bash append_data.sh /KIKI/hucheng/mini_advancedbarking_data/train/ \
 After preparing annotation file and audio files, we would like to train model now. 
 
 ```bash
-$ bash retrain.sh [Train_Task:AdvancedBarking,GlassBreaking,HomeEmergency,HomeEmergency_JP,Integrate] \
-                  [DVC_root] \
-                  [Meta_path] \
-                  [CSV_file_prefix] \
-                  [Path_to_save_train_log_and_model_wight] \
-                  [Exp_name_prefix] \
-                  [Training_epoch_number] \ 
-                  [Path_of_pretrained_weights] \
+$ bash retrain.sh [Train Task:AdvancedBarking,GlassBreaking,HomeEmergency,HomeEmergency_JP,FCN,Integrate] \
+                  [Training csv file] \
+                  [Validation csv file] \
+                  [Path to save training log and model wight] \
+                  [Exp name prefix] \
+                  [Training total epoch] \ 
+                  [Pretrained weights path] \
                   [CUDA_DEVICE_ID]
 ```
 
-For example, we want to retrain `AdvancedBarking` (Train_Task) task use data in `/KIKI/hucheng/mini_advancedbarking_data/` (DVC_root) and annotation file called `AdvancedBarking_MC_20210805_01`_train.csv (CSV_file_prefix) in `/KIKI/hucheng/mini_advancedbarking_data/meta/` (Meta_path). Then this retrain experiment named it as `mini_advancedbarking_20210805` (Exp_name_prefix). During training, we use pretraind model `/home/henry/pretrain_weight/Cnn14_8k_mAP=0.416.pth` (Path_of_pretrained_weights) and train `200` (Training_epoch_number) epoch with `gup1` (CUDA_DEVICE_ID).
+For example, we want to retrain `AdvancedBarking` (Train Task) task use training data `AdvancedBarking_MC_20210805_01_train.csv` (Training csv file) and validation data `AdvancedBarking_MC_20210805_01_val.csv` (Validation csv file). And this experiment will save log and model weight in `/KIKI/hucheng/mini_advancedbarking_exp/` (Path to save training log and model wight). 
+This retrain experiment named as `mini_advancedbarking_20210805_{}` (Exp name prefix). During training, we use pretraind model `/home/henry/pretrain_weight/Cnn14_8k_mAP=0.416.pth` (Pretrained weights path) and train `200` (Training total epoch) epoch with `gup1` (CUDA_DEVICE_ID).
 
 ```bash
 $ bash retrain.sh AdvancedBarking \
-                  /KIKI/hucheng/mini_advancedbarking_data/ \
-                  /KIKI/hucheng/mini_advancedbarking_data/meta/ \
-                  AdvancedBarking_MC_20210805_01 \
+                  /KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_01_train.csv \
+                  /KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_01_val.csv \
                   /KIKI/hucheng/mini_advancedbarking_exp/ \
                   mini_advancedbarking_20210805 \
                   200 \
-                  /home/henry/pretrain_weight/Cnn14_8k_mAP=0.416.pth \
+                  /home/henry/pretrain_weight/Cnn14_8k_mAP=0.416.pth
                   1
 ```
 
