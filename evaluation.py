@@ -197,7 +197,10 @@ def main(args):
         print(Counter(possible_gt[lb_list]))
 
     #   testing & regression set 
-    for model_idx, model_name in enumerate(args.model_path):
+    # all_model_path = glob.glob(os.path.join(args.model_path[0], '*.pkl'))
+    # all_model_path.sort()
+    all_model_path = args.model_path
+    for model_idx, model_name in enumerate(all_model_path):
         model.load_state_dict(torch.load(model_name))
         model.eval()
         model = model.to(device)
@@ -228,8 +231,8 @@ if __name__ == '__main__':
     parser.add_argument("--h5_root", type=str, default='/KIKI/datasets/audio_evaluation')
     parser.add_argument("--csv_root", type=str, default='/KIKI/datasets/audio_evaluation')
     parser.add_argument("--result_dir", type=str, default='./result')
-    parser.add_argument("--device", type=str, default='Furbo', choices=['Furbo','Mini'])
-    parser.add_argument("--feature", type=str, default='AdvancedBarking', choices=['AdvancedBarking','HomeEmergency','GlassBreaking','JP_HomeEmergency'])
+    parser.add_argument("--device", type=str, default='Furbo', choices=['Furbo','Mini', 'Furbo3'])
+    parser.add_argument("--feature", type=str, default='AdvancedBarking', choices=['AdvancedBarking','HomeEmergency','GlassBreaking','JP_HomeEmergency', 'FCN'])
     parser.add_argument("--model_path", nargs="+", default=['glass_breaking.pkl'])
     parser.add_argument("--batch_size", type=int, default=128, help="the batch size")
     parser.add_argument("--num_class", type=int, default=4, help="number of classes")
