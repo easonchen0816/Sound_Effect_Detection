@@ -99,21 +99,21 @@ $ bash retrain.sh AdvancedBarking \
 After retraining the model, we would like to evalute the performance of model. It provides the precision/recall/f1-score on testing set and trigger rate on regression set. You can download the current online model on [AWS S3 - ai-sound-model-weight](https://s3.console.aws.amazon.com/s3/buckets/ai-sound-model-weight?region=us-east-1&prefix=AdvBarking/&showversions=false).
 
 ```bash
-$ bash evaluate.sh [Device:Furbo,Mini] \
-                    [AI_Sound_Feature:AdvancedBarking HomeEmergency,GlassBreaking,JP_HomeEmergency] \
-                    [Model_Path] \
-                    [Num_Class] \
-                    [CUDA_DEVICE_ID]
+$ bash evaluate.sh [Device:Furbo,Mini,Furbo3] \
+                   [AI_Sound_Feature:AdvancedBarking HomeEmergency,GlassBreaking,JP_HomeEmergency,FCN] \
+                   [Model_Path] \
+                   [Num_Class] \
+                   [CUDA_DEVICE_ID]
 ```
 
 For example, if we want to evaluate the performance of `AdvanceBarking_FB_20210714_01.pkl` on `Furbo AdvancedBarking` and use `gpu0` , we can execute the following command:
 
 ```bash
 $ bash evaluate.sh Furbo \
-                    AdvancedBarking \
-                    ./AdvanceBarking_FB_20210714_01.pkl \
-                    4 \
-                    0
+                   AdvancedBarking \
+                   ./AdvanceBarking_FB_20210714_01.pkl \
+                   4 \
+                   0
 ```
 
 And it will save the precision/recall/trigger results as json file in `./result`.
