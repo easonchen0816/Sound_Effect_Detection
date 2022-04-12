@@ -67,34 +67,35 @@ $ bash append_data.sh /KIKI/hucheng/mini_advancedbarking_data/train/ \
 
 ### Add new data without DVC tool
 All meta data are in `/KIKI/datasets/audio_evaluation/all_device_data/` and all testing set are in `/KIKI/datasets/audio_evaluation/`. 
-Step1：We can use `choose_data.py` to choose certain annotation data. 
+
+**Step1：We can use `choose_data.py` to choose certain annotation data.**
 
 ```python
-$ python choose_data.py --datacsv [Meta data] --label [Annotation] --num [Num of annotation] --testset [Testing_set] --savecsv [Save Addition data as csv file]
+$ python choose_data.py --datacsv [Meta data] --label [Annotation] --num [Num of annotation] --traintestset [Avoid Training_Set, Testing_set] --savecsv [Save Addition data as csv file]
 ```
 
 For example, we want to choose Furbo3 150 "talking" data and 100 "Barking" data from `/KIKI/datasets/audio_evaluation/all_device_data/meta_furbo3_data.csv` and save as `add_talking_barking.csv` (we need to avoid data in furbo3 testing set `/KIKI/datasets/audio_evaluation/furbo3_testing_set.csv` and training set `/home/henry/sound_automation_retrain/dataset/exp/furbo2_online_furbo3_record_v2_train.csv`)
 
 ```python
-$ python choose_data.py --datacsv /KIKI/datasets/audio_evaluation/all_device_data/meta_furbo3_data.csv --label talking Barking --num 150 100 --testset /KIKI/datasets/audio_evaluation/furbo3_testing_set.csv /home/henry/sound_automation_retrain/dataset/exp/furbo2_online_furbo3_record_v2_train.csv --savecsv add_talking_barking.csv
+$ python choose_data.py --datacsv /KIKI/datasets/audio_evaluation/all_device_data/meta_furbo3_data.csv --label talking Barking --num 150 100 --traintestset /KIKI/datasets/audio_evaluation/furbo3_testing_set.csv /home/henry/sound_automation_retrain/dataset/exp/furbo2_online_furbo3_record_v2_train.csv --savecsv add_talking_barking.csv
 ```
 
-Step2：We can use `convert_to_trainval_format.py` to training or validation format.
+**Step2：We can use `convert_to_trainval_format.py` to training or validation format.**
 
 ```python
 $ python convert_to_trainval_format.py --csvfile [Addition data csvfile] --savecsv [Addition data csvfile after convert] --task [AdvancedBarking, HomeEmergency, GlassBreaking, JP_HomeEmergency, FCN]
 ```
 
-For example, we want to convert previous add_talking_barking.csv to training AdvancedBarking format as add_talking_barking_trainingformat.csv
+For example, we want to convert previous add_talking_barking.csv to training AdvancedBarking format as `add_talking_barking_trainingformat.csv`
 
 ```python
 $ python convert_to_trainval_format.py --csvfile add_talking_barking.csv --savecsv add_talking_barking_trainingformat.csv --task AdvancedBarking
 ```
 
-Step3：We can use `combine_data.py` to combine previous training data and addition data
+**Step3：We can use `combine_data.py` to combine previous training data and addition data**
 
 ```python
-$ python combine_data.py --csvfile [previous data and addition data] --savecsv [new training set or val set] 
+$ python combine_data.py --csvfile [previous_training_data_and_addition_data] --savecsv [new training_set_or_val_set] 
 ```
 
 For example, we want to combine previous training data `/home/henry/sound_automation_retrain/dataset/exp/furbo2_online_furbo3_record_v2_train.csv` and addition data `add_talking_barking.csv` and save as `new_furbo3_training_set.csv` 
