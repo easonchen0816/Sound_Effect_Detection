@@ -12,7 +12,7 @@ def main():
     parser.add_argument("-d","--datacsv", type=str, default="", help="csv data path")
     parser.add_argument("-l","--label", type=str, nargs='+', default="", help="target label")
     parser.add_argument("-n","--num", type=str, nargs='+', default="", help="each label num")
-    parser.add_argument("-t","--testset", type=str, nargs='+', default="", help="testing set csv")
+    parser.add_argument("-t","--traintestset", type=str, nargs='+', default="", help="traintesting set csv")
     parser.add_argument("-s","--savecsv", type=str, default="", help="save addition data csv path")
     args = parser.parse_args()
 
@@ -24,7 +24,7 @@ def main():
 
     # all testing data (new training data should not in testing set)
     testing_data = []
-    for t in args.testset:
+    for t in args.traintestset:
         t_data = pd.read_csv(t)
         for i in range(t_data.shape[0]): testing_data.append(t_data['path'][i])
 
