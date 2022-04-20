@@ -134,6 +134,7 @@ termcolor==1.1.0
 terminado==0.8.3
 testpath==0.4.4
 threadpoolctl==2.1.0
+timm==0.4.5
 toml==0.10.1
 torch==1.6.0
 torch-optimizer==0.0.1a15
