@@ -13,6 +13,7 @@ def main():
     parser.add_argument("-l","--label", type=str, nargs='+', default="", help="target label")
     parser.add_argument("-n","--num", type=str, nargs='+', default="", help="each label num")
     parser.add_argument("-t","--traintestset", type=str, nargs='+', default="", help="traintesting set csv")
+    parser.add_argument("-c","--choosesingle", action="store_true", help="choose single label setting")
     parser.add_argument("-s","--savecsv", type=str, default="", help="save addition data csv path")
     args = parser.parse_args()
 
@@ -50,6 +51,10 @@ def main():
                 if a in target and target[a] > choosing_num[a]: 
                     save_this_data = True
         
+        # single label filter
+        if args.choosesingle:
+            if len(annotation) != 1: save_this_data = False
+
         # save data
         if save_this_data:
             writer.writerow([path, annotation])
