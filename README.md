@@ -71,8 +71,10 @@ All meta data are in `/KIKI/datasets/audio_evaluation/all_device_data/` and all 
 **Step1：We can use `choose_data.py` to choose certain annotation data.**
 
 ```python
-$ python choose_data.py --datacsv [Meta data] --label [Annotation] --num [Num of annotation] --traintestset [Avoid Training_Set, Testing_set] --savecsv [Save Addition data as csv file]
+$ python choose_data.py --datacsv [Meta data] --label [Annotation] --num [Num of annotation] --traintestset [Avoid Training_Set, Testing_set] --savecsv [Save Addition data as csv file] --choosesingle
 ```
+
+\* --choosesingle: a flag that only choose single label in datacsv
 
 For example, we want to choose Furbo3 150 "talking" data and 100 "Barking" data from `/KIKI/datasets/audio_evaluation/all_device_data/meta_furbo3_data.csv` and save as `add_talking_barking.csv` (we need to avoid data in furbo3 testing set `/KIKI/datasets/audio_evaluation/furbo3_testing_set.csv` and training set `/home/henry/sound_automation_retrain/dataset/exp/furbo2_online_furbo3_record_v2_train.csv`)
 
