@@ -45,8 +45,10 @@ LABEL_NUM = {'AdvancedBarking':{0:'Barking',1:'Howling',2:'Crying',3:'Other'},
                 'FCN':{0:'Cat_Meow',1:'Cat_Fighting',2:'Cat_Crying',3:'Other'}}
 
 class SoundDataset_h5(Dataset):
-    def __init__(self, h5_root, filename='furbo_testing_set.h5'):
-        self.X = tables.open_file(os.path.join(h5_root, filename)).root.data
+    # def __init__(self, h5_root, filename='furbo_testing_set.h5'):
+    #     self.X = tables.open_file(os.path.join(h5_root, filename)).root.data
+    def __init__(self, h5_path):
+        self.X = tables.open_file(h5_path).root.data
 
     def __len__(self):
         return len(self.X)
@@ -174,8 +176,10 @@ def main(args):
     print(model)
 
     # data preparing 
-    test_dataset = SoundDataset_h5(args.h5_root, '{}_testing_set.h5'.format(args.device.lower()))
-    regression_dataset = SoundDataset_h5(args.h5_root, '{}_regression_set.h5'.format(args.device.lower()))
+    # test_dataset = SoundDataset_h5(args.h5_root, '{}_testing_set.h5'.format(args.device.lower()))
+    test_dataset = SoundDataset_h5(args.test_h5_path)
+    # regression_dataset = SoundDataset_h5(args.h5_root, '{}_regression_set.h5'.format(args.device.lower()))
+    regression_dataset = SoundDataset_h5(os.path.join(args.regression_h5_root, '{}_regression_set.h5'.format(args.device.lower())))
 
     test_dataloader = DataLoader(test_dataset, batch_size=params.batch_size, shuffle=False)
     regression_dataloader = DataLoader(regression_dataset, batch_size=params.batch_size, shuffle=False)
@@ -185,7 +189,8 @@ def main(args):
     print("="*60)
 
     # label preparing 
-    lb_converter = LabelConverter(args.feature, os.path.join(args.csv_root, '{}_testing_set.csv'.format(args.device.lower())))
+    # lb_converter = LabelConverter(args.feature, os.path.join(args.csv_root, '{}_testing_set.csv'.format(args.device.lower())))
+    lb_converter = LabelConverter(args.feature, args.test_csv_path)
     gt = lb_converter.gt
     possible_gt = lb_converter.possible_gt
     remark = lb_converter.remark
@@ -228,8 +233,11 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
     # arguments for evaluation
-    parser.add_argument("--h5_root", type=str, default='/KIKI/datasets/audio_evaluation')
-    parser.add_argument("--csv_root", type=str, default='/KIKI/datasets/audio_evaluation')
+    # parser.add_argument("--h5_root", type=str, default='/KIKI/datasets/audio_evaluation')
+    # parser.add_argument("--csv_root", type=str, default='/KIKI/datasets/audio_evaluation')
+    parser.add_argument("--regression_h5_root", type=str, default='/KIKI/datasets/audio_evaluation')
+    parser.add_argument("--test_h5_path", type=str)
+    parser.add_argument("--test_csv_path", type=str)
     parser.add_argument("--result_dir", type=str, default='./result')
     parser.add_argument("--device", type=str, default='Furbo', choices=['Furbo','Mini', 'Furbo3'])
     parser.add_argument("--feature", type=str, default='AdvancedBarking', choices=['AdvancedBarking','HomeEmergency','GlassBreaking','JP_HomeEmergency', 'FCN'])
