@@ -5,7 +5,8 @@ from argparse import ArgumentParser
 
 from torchsummary import summary
 from torch.utils.data import DataLoader
-from torchsampler import ImbalancedDatasetSampler
+# from torchsampler import ImbalancedDatasetSampler
+from imbalanced import ImbalancedDatasetSampler
 
 from dataset import SoundDataset
 from train import train_model, callback_get_label, prepare_model
