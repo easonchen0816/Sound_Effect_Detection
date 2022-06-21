@@ -130,7 +130,7 @@ class ParameterSetting_HomeEmergency():
         self.spec_aug = True
 
 class ParameterSetting_HomeEmergency_JP():
-    def __init__(self, train_label, val_label, name_prefix, save_root, exp_name, pretrained, epochs):
+    def __init__(self, train_label, val_label, save_root, exp_name, pretrained, epochs):
 
         self.train_label = train_label
         self.val_label = val_label
