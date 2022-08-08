@@ -180,6 +180,7 @@ def main(args):
     test_dataset = SoundDataset_h5(args.test_h5_path)
     # regression_dataset = SoundDataset_h5(args.h5_root, '{}_regression_set.h5'.format(args.device.lower()))
     regression_dataset = SoundDataset_h5(os.path.join(args.regression_h5_root, '{}_regression_set.h5'.format(args.device.lower())))
+    regression_dataset_path = pd.read_csv(os.path.join(args.regression_h5_root, '{}_regression_set.csv'.format(args.device.lower())))
 
     test_dataloader = DataLoader(test_dataset, batch_size=params.batch_size, shuffle=False)
     regression_dataloader = DataLoader(regression_dataset, batch_size=params.batch_size, shuffle=False)
@@ -221,6 +222,12 @@ def main(args):
             show_pr(possible_gt, individual_pred, remark, lb_list, model_name, lb_converter, name='model_performance_including_possible_TP')
         
         # regression set
+        regression_trigger = {}
+        regression_path = []
+        for i in range(regression_dataset_path.shape[0]):
+            regression_path.append(regression_dataset_path['path'][i])
+        assert len(regression_path) == len(regression_dataset)
+
         y_pred, prob = inference(regression_dataloader, device, model)
         
         trigger = Counter(y_pred)
@@ -229,6 +236,16 @@ def main(args):
             trigger[value] = trigger.pop(key)
         with open(os.path.join(args.result_dir, '{}_trigger_rate.json'.format(model_name)), 'w') as files:
             json.dump(trigger, files, indent=4)
+
+        # save regression trigger data path 
+        for i in range(len(y_pred)):
+            pred = int(y_pred[i])
+            if pred not in regression_trigger: regression_trigger[pred] = []
+            regression_trigger[pred].append(regression_path[i])
+        assert len(regression_path) == len(y_pred)
+        with open(os.path.join(args.result_dir, '{}_trigger_path.json'.format(model_name)), 'w') as files:
+            json.dump(regression_trigger, files, indent=4)
+
 
 if __name__ == '__main__':
     parser = ArgumentParser()
