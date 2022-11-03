@@ -9,14 +9,14 @@
 # $8: gpu index [ex: 2]
 
 
-# usage: bash retrain.sh AdvancedBarking \
-#                        /KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_01_train.csv \
-#                        /KIKI/hucheng/mini_advancedbarking_data/meta/AdvancedBarking_MC_20210805_01_val.csv \
-#                        /KIKI/hucheng/mini_advancedbarking_exp/ \
-#                        mini_advancedbarking_20210805 \
-#                        200 \
-#                        /home/henry/pretrain_weight/Cnn14_8k_mAP=0.416.pth
-#                        1
+# usage: bash retrain.sh AdvancedBarking \ 
+#                    /home/easonchen/sound_automation_retrain/Data/training_set.csv \
+#                    /home/easonchen/sound_automation_retrain/Data/testing_set.csv \ 
+#                    /RAID/eason/furbo_test/logs/ \ 
+#                    furbo_test \ 
+#                    200 \ 
+#                    /RAID/eason/pann_to_gtzan/Cnn14_mAP=0.431.pth \ 
+#                    3
 
 # Remind
 # $1 training task must choose one of these name => AdvancedBarking, GlassBreaking, HomeEmergency, HomeEmergency_JP, FCN, Integrate
