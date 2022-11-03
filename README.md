@@ -25,7 +25,7 @@ $ bash preparation.sh source_csv_path \
                            CUDA device ID
 ```
 
-For example, if we want to create a SED annotation file with 20000 data from `/home/henry/tomofun_modules/all_device_data/meta_furbo3_data.csv` to `/home/easonchen/sound_automation_retrain/Data/training_set.csv`, we can execute the following command:
+For example, if we want to create a SED annotation file with 20000 data from `/home/henry/tomofun_modules/all_device_data/meta_furbo3_data.csv` to `/home/easonchen/sound_automation_retrain/Data/training_set.csv` and use `gpu0`, we can execute the following command:
 
 ```bash
 #!/bin/bash
@@ -88,5 +88,5 @@ For example, if we want to evaluate the performance of `AdvanceBarking_FB_202107
 ```bash
 $ bash ./evaluate.sh /home/easonchen/sound_automation_retrain/Data/testing_set.csv \ 
         /RAID/eason/furbo_test/logs/snapshots/furbo_test_2022-09-14-17_57_lr-1e-04_optim-adamp_scheduler-cosine_spec_aug_/epoch_026_valloss_0.1220_valacc_0.9736_mAP_0.8489.pkl \ 
-        1
+        0
 ```
