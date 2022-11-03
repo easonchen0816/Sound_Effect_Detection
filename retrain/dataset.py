@@ -66,8 +66,9 @@ class SoundDataset(Dataset):
             wav_data, sr = wav_read(self.params, row.path, self.data_type)
             assert wav_data.dtype == np.int16
             data.append((wav_data, sr))
-            label.append(row.label)
+            label.append([int(x) for x in row.label[1:-2].split('.')])
             filenames.append(row.path)
+
         return data, label, filenames
 
     def convert_to_spec(self, data):
@@ -132,5 +133,6 @@ class SoundDataset(Dataset):
     def __getitem__(self, idx):
         spec = self.X[idx] if self.params.preload else self.preprocessing(self.X[idx][0], self.X[idx][1])
         label = self.Y[idx]
+        # print(np.array(label).shape)
 
         return spec.astype('float32'), label

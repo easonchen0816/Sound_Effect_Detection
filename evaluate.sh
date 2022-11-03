@@ -1,16 +1,8 @@
 #!/bin/bash
-# $1: device [Furbo, Mini]
-# $2: sound feature [AdvancedBarking, HomeEmergency, GlassBreaking, JP_HomeEmergency]
-# $3: model path
-# $4: number of class, AdvancedBarking:4, HomeEmergency/GlassBreaking/JP_HomeEmergency:2
-# $5: CUDA device ID
-# usage: bash evaluate.sh Furbo \
-#                         AdvancedBarking \
-#                         ./AdvanceBarking_FB_20210714_01.pkl \
-#                         4 \
-#                         0
+# $1: val .csv path
+# $2: model path
+# $3: CUDA device ID
+# usage: ./evaluate.sh /home/easonchen/sound_automation_retrain/Data/testing_set.csv \ /RAID/eason/furbo_test/logs/snapshots/furbo_test_2022-09-14-17_57_lr-1e-04_optim-adamp_scheduler-cosine_spec_aug_/epoch_026_valloss_0.1220_valacc_0.9736_mAP_0.8489.pkl \ 1
 
-CUDA_VISIBLE_DEVICES=$5 python evaluation.py --device $1 \
-                                            --feature $2 \
-                                            --model_path $3 \
-                                            --num_class $4
+CUDA_VISIBLE_DEVICES=$3 python evaluate.py --val_label $1 \
+                                            --model_path $2 \

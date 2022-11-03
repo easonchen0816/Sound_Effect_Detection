@@ -1,15 +1,16 @@
 import os
 import logging
+import numpy as np
 from pprint import pformat
 from argparse import ArgumentParser
 
 from torchsummary import summary
 from torch.utils.data import DataLoader
 # from torchsampler import ImbalancedDatasetSampler
-from imbalanced import ImbalancedDatasetSampler
+from torch.utils.data import WeightedRandomSampler
 
 from dataset import SoundDataset
-from train import train_model, callback_get_label, prepare_model
+from train import train_model, prepare_model
 from config import ParameterSetting_AdvancedBarking, ParameterSetting_GlassBreaking, ParameterSetting_HomeEmergency, ParameterSetting_HomeEmergency_JP, ParameterSetting_FCN, ParameterSetting_Integration
 
 
@@ -70,10 +71,14 @@ def main():
     print("Preparing validation data...")
     val_dataset = SoundDataset(params, train=False)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True, pin_memory=True)
     if params.sampler:
-        train_dataloader = DataLoader(train_dataset, sampler=ImbalancedDatasetSampler(train_dataset, callback_get_label=callback_get_label),
+        samples_weight = np.loadtxt(args.train_label[:-4] + '_weight.csv', delimiter=',')
+        sampler = WeightedRandomSampler(samples_weight, len(samples_weight), replacement=True)
+        train_dataloader = DataLoader(train_dataset, sampler=sampler,
                                       batch_size=params.batch_size, pin_memory=True)
+    else:
+        train_dataloader = DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True, pin_memory=True)
+
     val_dataloader = DataLoader(val_dataset, batch_size=params.batch_size, shuffle=False, pin_memory=True)
 
     dataloaders = {'train': train_dataloader, 'val': val_dataloader}

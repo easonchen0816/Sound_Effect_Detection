@@ -1,4 +1,5 @@
 from sklearn import metrics
+import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
 
 
@@ -62,7 +63,7 @@ def cfm(y_true, y_pred):
     Return:
         confusion matrix: ndarray of shape (n_classes, n_classes)
     """
-    return confusion_matrix(y_true, y_pred)
+    return metrics.multilabel_confusion_matrix(y_true, y_pred)
 
 
 def classification_report(y_true, y_pred, target_names=['barking', 'howling', 'crying', 'others']):
@@ -75,3 +76,12 @@ def classification_report(y_true, y_pred, target_names=['barking', 'howling', 'c
         report: string
     """
     return metrics.classification_report(y_true, y_pred, target_names=target_names, digits=len(target_names))
+
+def evaluate(y_t, y_p):
+    ap = metrics.average_precision_score(
+            y_t, y_p, average=None)
+    try:
+        auc = metrics.roc_auc_score(y_t, y_p, average=None)
+    except ValueError:
+        auc = 0
+    return ap, auc

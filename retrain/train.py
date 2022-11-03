@@ -7,23 +7,31 @@ import datetime
 import numpy as np
 from pprint import pformat
 from argparse import ArgumentParser
-
+import random
 import pkbar
 import torch
 import torch.nn.functional as Fx
 import pytorch_warmup as warmup
 from torchsummary import summary
 from torch.utils.data import DataLoader
-from torchsampler import ImbalancedDatasetSampler
 from torch.utils.tensorboard import SummaryWriter
 
 from dataset import SoundDataset
 from model import weak_mxh64_1024, Cnn14
 from utils.ops import Adam, AdamP, CosineAnnealingLR, ReduceLROnPlateau
-from metrics import accuracy, precision, recall, f1, cfm, classification_report
+from metrics import accuracy, precision, recall, f1, cfm, classification_report, evaluate
 from utils.losses import CrossEntropyLoss, BinaryCrossEntropyLoss, CrossEntropyLossWithoutWeight
 from config import ParameterSetting_AdvancedBarking, ParameterSetting_GlassBreaking, ParameterSetting_HomeEmergency, ParameterSetting_HomeEmergency_JP, ParameterSetting_Integration
 
+def fixed_seed(myseed):
+    np.random.seed(myseed)
+    random.seed(myseed)
+    torch.manual_seed(myseed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(myseed)
+        torch.cuda.manual_seed(myseed)
 
 def get_optim_scheduler(params, model, dataset_sizes):
     # optimizer
@@ -55,15 +63,16 @@ def get_folder_name(params):
     save_model_path = os.path.join(params.save_root, "snapshots", model_name)
     return save_model_path, model_name
 
-def pred_result(params, outputs):
-    prob = np.squeeze(Fx.softmax(outputs).detach().cpu().numpy()).tolist()
-    _, preds = torch.max(Fx.softmax(outputs), 1)
+def pred_multi_label(outputs):
+    prob = np.squeeze(outputs.detach().cpu().numpy()).tolist()
+    preds = torch.where(outputs > 0.5, torch.tensor(1).cuda(), torch.tensor(0).cuda())
     return prob, preds
 
 def train_model(model, params, dataloaders, dataset_sizes):
     ########################
     # Training opt setting #
     ########################
+    fixed_seed(2700)
     optimizer, scheduler = get_optim_scheduler(params, model, dataset_sizes)
     if params.warmup:
         warmup_scheduler = warmup.UntunedLinearWarmup(optimizer)
@@ -97,9 +106,7 @@ def train_model(model, params, dataloaders, dataset_sizes):
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
-    best_precision = 0.0
-    best_f1 = 0.0
-    best_recall = 0.0
+    best_mAP = 0.0
     best_true, best_pred = [], []
 
 
@@ -121,23 +128,29 @@ def train_model(model, params, dataloaders, dataset_sizes):
             running_corrects = 0
             # prediction and groundtruth label
             y_true, y_pred = [], []
+            y_sin_true, y_sin_pred = [], []
+            y_mul_true, y_mul_pred = [], []
             start_time = time.time()
             # iterative training
             for batch_idx, (inputs, labels) in enumerate(dataloaders[phase]):
+                labels = np.array([np.array(x) for x in labels]).T
+                # print(inputs.shape, labels.shape)
+                labels = torch.from_numpy(labels)
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
                 optimizer.zero_grad()
 
                 with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
-                    prob, preds = pred_result(params, outputs)
+                    outputs_dict = model(inputs)
+                    outputs = outputs_dict['clipwise_output']
+                    
+                    _, preds = pred_multi_label(outputs)
+                    # labels = labels.to(torch.float32)
 
-                    # compute loss
-                    if params.weight_loss is not None:
-                        loss = CrossEntropyLoss(outputs, labels, params.weight_loss)
-                    else:
-                        loss = CrossEntropyLossWithoutWeight(outputs, labels)
+                    # multi-labels loss
+                    
+                    loss = BinaryCrossEntropyLoss(outputs.to(torch.float32), labels.to(torch.float32))
                     
                     # backpropagation
                     if phase == 'train':
@@ -148,24 +161,24 @@ def train_model(model, params, dataloaders, dataset_sizes):
                             warmup_scheduler.dampen()
 
                 # get output and pred in batch
-                correct_in_batch = None
                 gt_label_in_batch = None
-                
-                correct_in_batch = torch.sum(preds == labels.data)
                 gt_label_in_batch = labels.data.cpu().detach().numpy()
-
                 running_loss += loss.item() * inputs.size(0)
-                running_corrects += correct_in_batch
-                acc_in_batch = correct_in_batch / float(len(inputs))
-
+                # print(np.array(y_true).shape)
                 y_true.extend(gt_label_in_batch)
-                y_pred.extend(preds.cpu().detach().numpy())
+                y_sin_true.extend(gt_label_in_batch[np.sum(gt_label_in_batch, axis=1) == 1])
+                y_mul_true.extend(gt_label_in_batch[np.sum(gt_label_in_batch, axis=1) != 1])
+                # print(np.array(y_true).shape)
+                preds = preds.cpu().detach().numpy()
+                y_pred.extend(preds)
+                y_sin_pred.extend(preds[np.sum(gt_label_in_batch, axis=1) == 1])
+                y_mul_pred.extend(preds[np.sum(gt_label_in_batch, axis=1) != 1])
 
                 if phase == 'train':
-                    kbar.update(batch_idx, values=[("train loss in batch", loss), ("train acc in batch", acc_in_batch)])
+                    kbar.update(batch_idx, values=[("train loss in batch", loss)])
                     writer.add_scalar('train loss', loss, epoch*len(dataloaders[phase]) + batch_idx)
                 else:
-                    kbar.update(batch_idx, values=[("val loss in batch", loss), ("val acc in batch", acc_in_batch)])
+                    kbar.update(batch_idx, values=[("val loss in batch", loss)])
                     writer.add_scalar('val loss', loss, epoch*len(dataloaders[phase]) + batch_idx)
 
             # finish an epoch
@@ -174,34 +187,29 @@ def train_model(model, params, dataloaders, dataset_sizes):
             print("finish this epoch in {:.0f}m {:.0f}s".format(time_elapsed // 60, time_elapsed % 60))
             # compute classification results in an epoch
             epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_acc = accuracy(y_true, y_pred)
-            epoch_f1 = f1(y_true, y_pred)
-            epoch_recall = recall(y_true, y_pred)
-            epoch_precision = precision(y_true, y_pred)
+            epoch_AP, epoch_acc = evaluate(y_true, y_pred)
+            epoch_mAP, epoch_acc = np.mean(epoch_AP[0:3]), np.mean(epoch_acc[0:3])
             
             if phase == 'train':
-                kbar.add(1, values=[("train epoch loss", epoch_loss), ("train acc", epoch_acc), ("train precision", epoch_precision), ("train recall", epoch_recall), ("train f1", epoch_f1)])
+                kbar.add(1, values=[("train epoch loss", epoch_loss), ("train auc", epoch_acc), ("train mAP", epoch_mAP)])
                 writer.add_scalar('train accuracy', epoch_acc, epoch)
-                writer.add_scalar('train precision', epoch_precision, epoch)
-                writer.add_scalar('train recall', epoch_recall, epoch)
-                writer.add_scalar('train f1 score', epoch_f1, epoch)
+                writer.add_scalar('train mAP', epoch_mAP, epoch)
             else:
-                kbar.add(1, values=[("val epoch loss", epoch_loss), ("val acc", epoch_acc), ("val precision", epoch_precision), ("val recall", epoch_recall), ("val f1", epoch_f1)])
-                writer.add_scalar('val accuracy', epoch_acc, epoch)
-                writer.add_scalar('val precision', epoch_precision, epoch)
-                writer.add_scalar('val recall', epoch_recall, epoch)
-                writer.add_scalar('val f1 score', epoch_f1, epoch)
+                kbar.add(1, values=[("val epoch loss", epoch_loss), ("val auc", epoch_acc), ("val mAP", epoch_mAP)])
+                writer.add_scalar('val accuracy', epoch_mAP, epoch)
 
                 # save model if f1 and precision are all the best
-                if epoch_f1 > best_f1 or epoch_precision > best_precision or epoch_recall > best_recall or epoch_acc > best_acc or (epoch in [199, 174, 149, 124, 99, 74, 49, 24]):
-                    best_f1 = epoch_f1 if epoch_f1 > best_f1 else best_f1
-                    best_precision = epoch_precision if epoch_precision > best_precision else best_precision
-                    best_acc = epoch_acc if epoch_acc > best_acc else best_acc
-                    best_recall = epoch_recall if epoch_recall > best_recall else best_recall
+                if epoch_mAP > best_mAP:
+                    best_mAP = epoch_mAP 
+                    best_acc = epoch_acc 
                     best_model_wts = copy.deepcopy(model.state_dict())
                     best_true = y_true
                     best_pred = y_pred
-                    wpath = os.path.join(save_model_path, 'epoch_{:03d}_valloss_{:.4f}_valacc_{:.4f}_pre_{:.4f}_recall{:.4f}_f1_{:.4f}.pkl'.format(epoch+1, epoch_loss, epoch_acc, epoch_precision, epoch_recall, epoch_f1))
+                    best_true_sin = y_sin_true
+                    best_pred_sin = y_sin_pred
+                    best_true_mul = y_mul_true
+                    best_pred_mul = y_mul_pred
+                    wpath = os.path.join(save_model_path, 'epoch_{:03d}_valloss_{:.4f}_valacc_{:.4f}_mAP_{:.4f}.pkl'.format(epoch+1, epoch_loss, epoch_acc, epoch_mAP))
                     torch.save(model.state_dict(), wpath)
                     print("=== save weight " + wpath + " ===")
                 print()
@@ -212,29 +220,27 @@ def train_model(model, params, dataloaders, dataset_sizes):
     # finish training
     time_elapsed = time.time() - since
     cfmatrix = cfm(best_true, best_pred)
+    cfmatrix_sin = cfm(best_true_sin, best_pred_sin)
+    cfmatrix_mul = cfm(best_true_mul, best_pred_mul)
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
-    print('Best val Precision: {:4f}'.format(best_precision))
-    print('Best val Recall: {:4f}'.format(best_recall))
-    print('Best val F1: {:4f}'.format(best_f1))
+    print('Best val mAP: {:4f}'.format(best_mAP))
     print(cfmatrix)
-    print(classification_report(best_true, best_pred, params.category))
+    print(classification_report(best_true, best_pred))
+    print(cfmatrix_sin)
+    print(classification_report(best_true_sin, best_pred_sin))
+    print(cfmatrix_mul)
+    print(classification_report(best_true_mul, best_pred_mul))
     # load best model weights
     model.load_state_dict(best_model_wts)
 
     with open(os.path.join(log_path, "classification_report.txt"), "w") as f:
         f.write('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60)+"\n")
         f.write('Best val Acc: {:4f}'.format(best_acc)+"\n")
-        f.write('Best val Precision: {:4f}'.format(best_precision)+"\n")
-        f.write('Best val Recall: {:4f}'.format(best_recall)+"\n")
-        f.write('Best val F1: {:4f}'.format(best_f1)+"\n")
+        f.write('Best val mAP: {:4f}'.format(best_mAP)+"\n")
         f.write(str(cfmatrix)+"\n")
-        f.write(classification_report(best_true, best_pred, params.category)+"\n")
+        f.write(classification_report(best_true, best_pred)+"\n")
 
-
-def callback_get_label(dataset, idx):
-    y = dataset.Y[idx]
-    return y
 
 def prepare_model(params):
     # Different model arch
