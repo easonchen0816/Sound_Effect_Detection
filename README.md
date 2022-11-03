@@ -28,11 +28,6 @@ $ bash preparation.sh source_csv_path \
 For example, if we want to create a SED annotation file with 20000 data from `/home/henry/tomofun_modules/all_device_data/meta_furbo3_data.csv` to `/home/easonchen/sound_automation_retrain/Data/training_set.csv` and use `gpu0`, we can execute the following command:
 
 ```bash
-#!/bin/bash
-# $1: source_csv_path
-# $2: target_csv_path
-# $3: num_data
-# $4: CUDA device ID
 $ bash preparation.sh "/home/henry/tomofun_modules/all_device_data/meta_furbo3_data.csv"\
                         '/home/easonchen/sound_automation_retrain/Data/training_set.csv' \
                         20000 \
